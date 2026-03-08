@@ -4,6 +4,8 @@ import { Home, Gamepad2, PlusSquare, Search, User, Menu, X, Sparkles, Shield, Ca
 import { useAuth } from '../../contexts/AuthContext';
 import TrendingHashtags from '../TrendingHashtags';
 
+import BuddyConnect from '../BuddyConnect';
+
 const MobileHeader = () => {
     const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
@@ -102,6 +104,10 @@ const MobileHeader = () => {
                     {/* Trending Section */}
                     <div className="mt-4 pt-6 border-t border-gray-800">
                         <TrendingHashtags onTagClick={handleTagClick} />
+                    </div>
+
+                    <div className="mt-6">
+                        <BuddyConnect />
                     </div>
 
                     <p className="text-center text-gray-600 text-xs mt-8 pb-4 shrink-0">

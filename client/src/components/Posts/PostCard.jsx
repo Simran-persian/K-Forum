@@ -209,14 +209,11 @@ const PostCard = ({ post, onDelete }) => {
 
         {/* Image attachments */}
         {post.attachments && post.attachments.length > 0 && (
-          <div className={`${post.attachments.length === 1 ? '' : 'grid grid-cols-2 sm:grid-cols-3 gap-2'}`}>
+          <div className={`${post.attachments.length === 1 ? '' : 'grid grid-cols-2 gap-2'}`}>
             {post.attachments.map((attachment, index) => (
               <div
                 key={index}
-                className={`relative group cursor-pointer overflow-hidden rounded-lg ${post.attachments.length === 1
-                    ? 'w-full'
-                    : 'aspect-square'
-                  }`}
+                className="relative group cursor-pointer overflow-hidden rounded-lg bg-black/10"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -227,10 +224,7 @@ const PostCard = ({ post, onDelete }) => {
                 <img
                   src={attachment.url}
                   alt={attachment.filename}
-                  className={`w-full object-cover transition-transform duration-200 ${post.attachments.length === 1
-                      ? 'max-h-[600px] h-auto object-contain bg-black/5'
-                      : 'h-full group-hover:scale-110'
-                    }`}
+                  className="w-full h-auto max-h-[500px] object-contain transition-opacity duration-200 group-hover:opacity-90"
                 />
                 {index === 2 && post.attachments.length > 3 && (
                   <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center">

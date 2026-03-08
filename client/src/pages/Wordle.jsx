@@ -278,7 +278,7 @@ const Wordle = () => {
                 </div>
 
                 {/* Game Board */}
-                <div className="grid gap-2 mb-8">
+                <div className="grid gap-1 sm:gap-2 mb-8 mx-auto w-fit">
                     {[...Array(MAX_ATTEMPTS)].map((_, rowIndex) => {
                         const guess = gameState.guesses[rowIndex];
                         const isCurrentRow = rowIndex === gameState.guesses.length && !gameState.completed;
@@ -289,7 +289,7 @@ const Wordle = () => {
                         return (
                             <div
                                 key={rowIndex}
-                                className={`flex justify-center gap-2 ${shakeRow === rowIndex ? 'animate-shake' : ''}`}
+                                className={`flex justify-center gap-1 sm:gap-2 ${shakeRow === rowIndex ? 'animate-shake' : ''}`}
                             >
                                 {letters.map((letter, colIndex) => {
                                     const status = guess?.result?.[colIndex];
@@ -300,9 +300,9 @@ const Wordle = () => {
                                         <div
                                             key={colIndex}
                                             className={`
-                        w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center
+                        w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center
                         text-2xl sm:text-3xl font-black text-white uppercase
-                        border-2 rounded-xl transition-all duration-300
+                        border-2 rounded-lg sm:rounded-xl transition-all duration-300
                         ${getTileColor(status)}
                         ${hasLetter && !guess ? 'scale-105 border-gray-500 bg-white/5 shadow-lg' : ''}
                         ${!hasLetter && !guess ? 'border-gray-700/50 bg-gray-800/20' : ''}
@@ -348,25 +348,26 @@ const Wordle = () => {
                 )}
 
                 {/* Keyboard */}
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2 mt-6 sm:mt-0 w-full max-w-[500px] mx-auto overflow-x-hidden px-1 sm:px-0">
                     {keyboard.map((row, rowIndex) => (
-                        <div key={rowIndex} className="flex justify-center gap-1 sm:gap-2">
+                        <div key={rowIndex} className={`flex justify-center gap-1 sm:gap-2 w-full ${rowIndex === 1 ? 'px-[5%] sm:px-[10%]' : ''}`}>
                             {row.map((key) => (
                                 <button
                                     key={key}
                                     onClick={() => handleKeyPress(key)}
                                     disabled={gameState.completed}
                                     className={`
-                    ${key.length > 1 ? 'px-3 sm:px-4 text-xs' : 'w-8 sm:w-10'}
-                    h-12 sm:h-14 rounded-xl font-bold text-white uppercase
+                    ${key.length > 1 ? 'flex-[1.7] text-[10px] sm:text-xs' : 'flex-[1] text-sm sm:text-lg'}
+                    h-12 sm:h-14 rounded-md sm:rounded-xl font-bold text-white uppercase
                     transition-all duration-150 active:scale-95 shadow-md
                     ${getKeyColor(key)}
                     ${gameState.completed ? 'opacity-50 cursor-not-allowed' : ''}
                     flex items-center justify-center border-b-[3px] border-black/20
                   `}
                                 >
-                                    {key === 'BACKSPACE' ? <Delete className="w-5 h-5" /> :
-                                        key === 'ENTER' ? <CornerDownLeft className="w-5 h-5" /> : key}
+                                    {key === 'BACKSPACE' ? <Delete className="w-4 h-4 sm:w-5 sm:h-5" /> :
+                                        key === 'ENTER' ? <span className="hidden sm:inline">ENTER</span> : key}
+                                    {key === 'ENTER' && <CornerDownLeft className="w-4 h-4 sm:hidden" />}
                                 </button>
                             ))}
                         </div>

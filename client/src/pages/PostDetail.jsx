@@ -373,11 +373,11 @@ const PostDetail = () => {
 
             {/* Image attachments */}
             {post.attachments && post.attachments.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className={post.attachments.length === 1 ? 'w-full' : 'grid grid-cols-2 gap-3'}>
                 {post.attachments.map((attachment, index) => (
                   <div
                     key={index}
-                    className="relative group cursor-pointer aspect-square overflow-hidden rounded-lg"
+                    className="relative group cursor-pointer rounded-lg bg-black/10 overflow-hidden"
                     onClick={() => {
                       setViewerImages(post.attachments.map(a => a.url));
                       setSelectedImageIndex(index);
@@ -387,24 +387,18 @@ const PostDetail = () => {
                     <img
                       src={attachment.url}
                       alt={attachment.filename}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                      className="w-full h-auto max-h-[700px] object-contain group-hover:opacity-90 transition-opacity duration-200"
                     />
-                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-30 transition-opacity duration-200" />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <Image className="w-8 h-8 text-white" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      <div className="bg-black/40 rounded-full p-2">
+                        <Image className="w-6 h-6 text-white" />
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            {/* Image Viewer */}
-            {showImageViewer && (
-              <ImageViewer
-                images={viewerImages}
-                initialIndex={selectedImageIndex}
-                onClose={() => setShowImageViewer(false)}
-              />
-            )}
+
           </div>
         </div>
 
@@ -546,7 +540,7 @@ const PostDetail = () => {
                       </label>
                     )}
 
-                    {post.category === 'Bookies' && (
+                    {(post.category === 'Bookies' || post.category === 'academics') && (
                       <label className="flex items-center space-x-2 text-[#17d059] cursor-pointer hover:text-emerald-400 transition-colors">
                         <input
                           type="file"
@@ -558,7 +552,7 @@ const PostDetail = () => {
                         />
                         <div className="flex items-center space-x-2 bg-white/5 px-4 py-2 rounded-xl border border-white/5 group">
                           <Image className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                          <span className="text-sm font-bold">Add Answer Image (Max 10MB)</span>
+                          <span className="text-sm font-bold">Add Image (Max 10MB)</span>
                         </div>
                       </label>
                     )}
@@ -614,14 +608,14 @@ const PostDetail = () => {
                         {comment.attachments.map((attachment, idx) => (
                           <div
                             key={idx}
-                            className="relative aspect-square rounded-xl overflow-hidden cursor-pointer group border border-white/5 hover:border-emerald-500/30 transition-all"
+                            className="relative rounded-xl overflow-hidden cursor-pointer group border border-white/5 hover:border-emerald-500/30 transition-all bg-black/10"
                             onClick={() => {
                               setViewerImages(comment.attachments.map(a => a.url));
                               setSelectedImageIndex(idx);
                               setShowImageViewer(true);
                             }}
                           >
-                            <img src={attachment.url} alt="comment-img" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <img src={attachment.url} alt="comment-img" className="w-full h-auto max-h-[400px] object-contain group-hover:opacity-90 transition-opacity duration-200" />
                             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <Eye className="w-5 h-5 text-white" />
                             </div>
@@ -675,6 +669,15 @@ const PostDetail = () => {
           ))
         )}
       </div>
+
+      {/* Image Viewer — works for both post and comment images */}
+      {showImageViewer && (
+        <ImageViewer
+          images={viewerImages}
+          initialIndex={selectedImageIndex}
+          onClose={() => setShowImageViewer(false)}
+        />
+      )}
     </div >
   );
 };

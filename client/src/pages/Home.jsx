@@ -131,7 +131,7 @@ const Home = () => {
 
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)]">
+    <div className="relative min-h-[calc(100vh-4rem)] lg:h-[calc(100vh-2rem)] lg:overflow-hidden lg:flex lg:flex-col">
 
       {/* Floating Action Button */}
       <button
@@ -163,11 +163,11 @@ const Home = () => {
             <select
               value={sortBy}
               onChange={(e) => handleSortChange(e.target.value)}
-              className="bg-transparent text-gray-400 text-xs font-bold px-4 py-2 outline-none cursor-pointer hover:text-white transition-colors appearance-none"
+              className="bg-[#0f1115] text-gray-400 text-xs font-bold px-4 py-2 outline-none cursor-pointer hover:text-white transition-colors appearance-none rounded-lg"
             >
-              <option value="createdAt">Newest</option>
-              <option value="upvotes">Top</option>
-              <option value="commentCount">Hot</option>
+              <option value="createdAt" className="bg-[#1a1d23] text-gray-300">Newest</option>
+              <option value="upvotes" className="bg-[#1a1d23] text-gray-300">Top</option>
+              <option value="commentCount" className="bg-[#1a1d23] text-gray-300">Hot</option>
             </select>
             <ChevronDown className="w-4 h-4 text-gray-500 mr-4 pointer-events-none" />
           </div>
@@ -208,10 +208,10 @@ const Home = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:flex-1 lg:min-h-0">
         {/* Left Column: Filters (Sticky) */}
-        <div className="col-span-1 lg:col-span-3">
-          <div className="lg:sticky lg:top-24 space-y-6">
+        <div className="col-span-1 lg:col-span-3 lg:overflow-hidden">
+          <div className="space-y-6">
             {/* Compact Filter Card / Dropdown */}
             <div className="relative">
               <button
@@ -283,7 +283,7 @@ const Home = () => {
         </div>
 
         {/* Main Feed Column */}
-        <div className="lg:col-span-5">
+        <div className="lg:col-span-6 lg:overflow-y-auto lg:pr-2 feed-scroll">
 
 
 
@@ -339,19 +339,16 @@ const Home = () => {
         </div>
 
         {/* Right Column: Trending (Sticky) */}
-        <div className="hidden lg:block lg:col-span-4">
-          <div className="sticky top-24 space-y-6">
+        <div className="hidden lg:flex lg:flex-col lg:col-span-3 lg:overflow-hidden gap-6">
+          {/* Event Calendar — stays fixed */}
+          <EventCalendar />
 
-            {/* Event Calendar */}
-            <EventCalendar />
-
-            {/* Trending Hashtags */}
-            <div className="glass-panel rounded-3xl p-6 w-[250px] min-w-[250px]">
-              <TrendingHashtags onTagClick={(tag) => {
-                setSearchTerm(`#${tag}`);
-                setPage(1);
-              }} />
-            </div>
+          {/* Trending Hashtags — scrollable */}
+          <div className="glass-panel rounded-3xl p-6 flex-1 overflow-y-auto feed-scroll min-h-0">
+            <TrendingHashtags onTagClick={(tag) => {
+              setSearchTerm(`#${tag}`);
+              setPage(1);
+            }} />
           </div>
         </div>
 

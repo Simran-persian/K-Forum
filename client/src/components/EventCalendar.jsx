@@ -71,7 +71,7 @@ const EventCalendar = () => {
 
     if (loading) {
         return (
-            <div className="glass-card rounded-3xl p-3 w-full md:w-[250px] md:min-w-[250px] md:max-w-[250px] animate-pulse">
+            <div className="glass-panel rounded-3xl p-3 w-full animate-pulse">
                 <div className="h-6 w-32 bg-white/5 rounded mb-4"></div>
                 <div className="grid grid-cols-7 gap-1">
                     {[...Array(35)].map((_, i) => (
@@ -83,7 +83,7 @@ const EventCalendar = () => {
     }
 
     return (
-        <div className="glass-card rounded-3xl p-3 relative overflow-hidden w-full md:w-[250px] md:min-w-[250px] md:max-w-[250px]">
+        <div className="glass-panel rounded-3xl p-3 relative overflow-hidden w-full">
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-white flex items-center gap-2 text-sm">

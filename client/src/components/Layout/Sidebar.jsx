@@ -37,8 +37,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             </button>
 
             {/* Minimal Logo */}
-            <div className={`flex items-center ${isOpen ? 'justify-start pl-4' : 'justify-center'} mb-12 transition-all duration-300`}>
-                <div className="w-12 h-12 shrink-0 bg-gradient-to-tr from-emerald-400 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 animate-float">
+            <div className={`flex items-center ${isOpen ? 'justify-start px-4' : 'justify-center px-4'} mb-12 transition-all duration-300`}>
+                <div className="w-12 h-12 shrink-0 bg-gradient-to-tr from-emerald-400 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
                     <span className="text-white font-extrabold text-2xl">K</span>
                 </div>
                 <div className={`ml-4 overflow-hidden transition-all duration-300 ${isOpen ? 'w-auto opacity-100' : 'w-0 opacity-0'}`}>

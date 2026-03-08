@@ -2,8 +2,10 @@ import express from 'express';
 import User from '../models/User.js';
 import Post from '../models/Post.js';
 import { auth } from '../middleware/auth.js';
+import Conversation from '../models/Conversation.js';
 import { uploadImage } from '../config/cloudinary.js';
 import multer from 'multer';
+import emailService from '../services/emailService.js';
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -56,6 +58,30 @@ router.get('/connections', auth, async (req, res) => {
   }
 });
 
+// Get incoming connection requests
+router.get('/requests', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).populate({
+      path: 'connectionRequests.user',
+      select: 'name avatar studentId branch year'
+    });
+
+    // Filter out only pending requests
+    const pendingRequests = user.connectionRequests
+      .filter(req => req.status === 'pending')
+      .map(req => ({
+        ...req.user.toObject(),
+        requestId: req._id,
+        requestedAt: req.createdAt
+      }));
+
+    res.json(pendingRequests);
+  } catch (error) {
+    console.error('Get requests error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Send connection request
 router.post('/connect/:userId', auth, async (req, res) => {
   try {
@@ -85,6 +111,12 @@ router.post('/connect/:userId', auth, async (req, res) => {
       status: 'pending'
     });
     await targetUser.save();
+
+    // Send email notification to target user
+    const sender = await User.findById(req.userId).select('name');
+    emailService.sendConnectionRequestEmail(
+      targetUser.email, targetUser.name, sender.name
+    ).catch(err => console.error('Failed to send connect email:', err));
 
     res.json({ message: 'Connection request sent' });
   } catch (error) {
@@ -118,9 +150,46 @@ router.post('/connect/:userId/accept', auth, async (req, res) => {
     await user.save();
     await requester.save();
 
-    res.json({ message: 'Connection accepted' });
+    // Check if conversation already exists
+    const existingConv = await Conversation.findOne({
+      participants: { $all: [req.userId, userId] }
+    });
+
+    if (!existingConv) {
+      // Create new conversation
+      const newConv = new Conversation({
+        participants: [req.userId, userId]
+      });
+      await newConv.save();
+    }
+
+    res.json({ message: 'Connection accepted and chat initialized' });
   } catch (error) {
     console.error('Accept connection error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Reject connection request
+router.post('/connect/:userId/reject', auth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(req.userId);
+
+    const requestIndex = user.connectionRequests.findIndex(
+      r => r.user.toString() === userId && r.status === 'pending'
+    );
+
+    if (requestIndex === -1) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
+
+    user.connectionRequests[requestIndex].status = 'rejected';
+    await user.save();
+
+    res.json({ message: 'Connection rejected' });
+  } catch (error) {
+    console.error('Reject connection error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
