@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from '../services/axiosSetup';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,6 +12,7 @@ const Home = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const feedRef = useRef(null);
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +58,26 @@ const Home = () => {
       setSearchTerm(query);
     }
   }, [searchParams]);
+
+  // Save window scroll (mobile) continuously
+  useEffect(() => {
+    const onScroll = () => {
+      sessionStorage.setItem('homeScrollY', String(window.scrollY));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Save feed column scroll (desktop) continuously
+  useEffect(() => {
+    const el = feedRef.current;
+    if (!el) return;
+    const onFeedScroll = () => {
+      sessionStorage.setItem('feedScrollY', String(el.scrollTop));
+    };
+    el.addEventListener('scroll', onFeedScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onFeedScroll);
+  }, []);
 
   useEffect(() => {
     fetchPosts();
@@ -136,7 +157,7 @@ const Home = () => {
       {/* Floating Action Button */}
       <button
         onClick={handleCreatePost}
-        className="fixed bottom-8 right-8 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg hover:shadow-emerald-500/50 hover:scale-105 transition-all duration-300 z-50 animate-bounce-in"
+        className="fixed bottom-8 right-8 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-white w-16 h-16 rounded-2xl flex items-center justify-center border border-white/10 hover:scale-105 transition-all duration-300 z-50 animate-bounce-in"
       >
         <Plus className="w-8 h-8" />
       </button>
@@ -283,7 +304,7 @@ const Home = () => {
         </div>
 
         {/* Main Feed Column */}
-        <div className="lg:col-span-6 lg:overflow-y-auto lg:pr-2 feed-scroll">
+        <div ref={feedRef} className="lg:col-span-6 lg:overflow-y-auto lg:pr-2 feed-scroll">
 
 
 

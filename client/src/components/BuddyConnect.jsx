@@ -15,12 +15,27 @@ const BuddyConnect = () => {
 
     const fetchData = async () => {
         try {
-            const [sugRes, reqRes] = await Promise.all([
+            // Fetch suggestions and requests independently so one failure doesn't block the other
+            const [sugRes, reqRes] = await Promise.allSettled([
                 axios.get('/api/users/suggestions'),
                 axios.get('/api/users/requests')
             ]);
-            setSuggestions(sugRes.data);
-            setRequests(reqRes.data);
+
+            let suggestionData = sugRes.status === 'fulfilled' ? (sugRes.value.data || []) : [];
+            const requestData = reqRes.status === 'fulfilled' ? (reqRes.value.data || []) : [];
+
+            // If suggestions came back empty (mock fallback or genuinely empty), fetch all users
+            if (suggestionData.length === 0) {
+                try {
+                    const allRes = await axios.get('/api/users/all-users');
+                    suggestionData = allRes.data || [];
+                } catch (e) {
+                    console.error('Error fetching all users:', e);
+                }
+            }
+
+            setSuggestions(suggestionData);
+            setRequests(requestData);
         } catch (error) {
             console.error('Error fetching buddy data:', error);
         } finally {
@@ -89,7 +104,6 @@ const BuddyConnect = () => {
         </div>
     );
 
-    if (suggestions.length === 0 && requests.length === 0) return null;
 
     return (
         <div className="flex flex-col gap-6 w-full">
@@ -140,57 +154,55 @@ const BuddyConnect = () => {
             )}
 
             {/* Suggestions Section */}
-            {suggestions.length > 0 && (
-                <div className="glass-panel rounded-3xl p-5 mt-6 w-full">
-                    <h3 className="flex items-center gap-2 font-bold text-white mb-4">
-                        <Users className="w-5 h-5 text-emerald-400" />
-                        Find Buddies
-                    </h3>
-                    <div className="space-y-4">
-                        {suggestions.map(user => (
-                            <div key={user._id} className="flex items-center relative group min-h-[44px]">
-                                <div className="flex items-center gap-3 pr-12">
-                                    <div className="relative shrink-0">
-                                        <img
-                                            src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
-                                            alt={user.name}
-                                            className="w-10 h-10 rounded-full border border-gray-700 object-cover"
-                                        />
-                                        {sentRequests.includes(user._id) && (
-                                            <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-0.5 border-2 border-[#0f1115]">
-                                                <UserCheck className="w-2 h-2 text-white" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="overflow-hidden">
-                                        <h4 className="text-sm font-bold text-gray-200 truncate w-28 lg:w-32">{user.name}</h4>
-                                        <p className="text-xs text-gray-500 truncate">{getBranchAbbreviation(user.branch)} • {user.year} Yr</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => handleConnect(user._id)}
-                                    disabled={sentRequests.includes(user._id)}
-                                    className={`
-                                        absolute right-0 top-1/2 -translate-y-1/2
-                                        p-2 rounded-xl transition-all duration-300
-                                        ${sentRequests.includes(user._id)
-                                            ? 'bg-emerald-500/10 text-emerald-400 cursor-default'
-                                            : 'bg-white/5 text-gray-400 hover:bg-emerald-500 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20'
-                                        }
-                                    `}
-                                    title={sentRequests.includes(user._id) ? "Request Sent" : "Connect"}
-                                >
-                                    {sentRequests.includes(user._id) ? (
-                                        <UserCheck className="w-4 h-4" />
-                                    ) : (
-                                        <UserPlus className="w-4 h-4" />
+            <div className="glass-panel rounded-3xl p-5 mt-6 w-full">
+                <h3 className="flex items-center gap-2 font-bold text-white mb-4">
+                    <Users className="w-5 h-5 text-emerald-400" />
+                    Find Buddies
+                </h3>
+                <div className="space-y-4">
+                    {suggestions.map(user => (
+                        <div key={user._id} className="flex items-center relative group min-h-[44px]">
+                            <div className="flex items-center gap-3 pr-12">
+                                <div className="relative shrink-0">
+                                    <img
+                                        src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`}
+                                        alt={user.name}
+                                        className="w-10 h-10 rounded-full border border-gray-700 object-cover"
+                                    />
+                                    {sentRequests.includes(user._id) && (
+                                        <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-0.5 border-2 border-[#0f1115]">
+                                            <UserCheck className="w-2 h-2 text-white" />
+                                        </div>
                                     )}
-                                </button>
+                                </div>
+                                <div className="overflow-hidden">
+                                    <h4 className="text-sm font-bold text-gray-200 truncate w-28 lg:w-32">{user.name}</h4>
+                                    <p className="text-xs text-gray-500 truncate">{getBranchAbbreviation(user.branch)} • {user.year} Yr</p>
+                                </div>
                             </div>
-                        ))}
-                    </div>
+                            <button
+                                onClick={() => handleConnect(user._id)}
+                                disabled={sentRequests.includes(user._id)}
+                                className={`
+                                    absolute right-0 top-1/2 -translate-y-1/2
+                                    p-2 rounded-xl transition-all duration-300
+                                    ${sentRequests.includes(user._id)
+                                        ? 'bg-emerald-500/10 text-emerald-400 cursor-default'
+                                        : 'bg-white/5 text-gray-400 hover:bg-gradient-to-br hover:from-emerald-500 hover:to-teal-400 hover:text-white'
+                                    }
+                                `}
+                                title={sentRequests.includes(user._id) ? "Request Sent" : "Connect"}
+                            >
+                                {sentRequests.includes(user._id) ? (
+                                    <UserCheck className="w-4 h-4" />
+                                ) : (
+                                    <UserPlus className="w-4 h-4" />
+                                )}
+                            </button>
+                        </div>
+                    ))}
                 </div>
-            )}
+            </div>
         </div>
     );
 };

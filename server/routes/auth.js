@@ -4,9 +4,126 @@ import User from '../models/User.js';
 import { auth } from '../middleware/auth.js';
 import emailService from '../services/emailService.js';
 import dotenv from 'dotenv';
+import admin from 'firebase-admin';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ── Firebase Admin init (done once, guarded so hot-reloads don't error) ──────
+if (!admin.apps.length) {
+  try {
+    const serviceAccountPath = path.resolve(__dirname, '../serviceAccountKey.json');
+    console.log('--- Firebase Admin Initialization ---');
+    console.log('Looking for service account at:', serviceAccountPath);
+
+    if (fs.existsSync(serviceAccountPath)) {
+      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+      console.log('✅ Firebase Admin initialized successfully');
+    } else {
+      console.warn('⚠️  Firebase Admin: serviceAccountKey.json NOT FOUND at', serviceAccountPath);
+    }
+  } catch (e) {
+    console.error('❌ Firebase Admin Initialization ERROR:', e.message);
+  }
+}
+
+
 const router = express.Router();
+
+// ── Firebase Google Sign-In ───────────────────────────────────────────────────
+// Client sends the Firebase ID token after signInWithPopup; we verify it,
+// then find-or-create a User and return a standard JWT.
+router.post('/firebase', async (req, res) => {
+  console.log('--- Incoming /api/auth/firebase request ---');
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      console.warn('Missing idToken in request');
+      return res.status(400).json({ message: 'Firebase ID token required' });
+    }
+
+    // Verify with Firebase Admin
+    console.log('1. Verifying token with Firebase Admin...');
+    let decoded;
+    try {
+      decoded = await admin.auth().verifyIdToken(idToken);
+      console.log('2. Token verified successfully for user:', decoded.email);
+    } catch (e) {
+      console.error('2. Token verification FAILED:', e.message);
+      return res.status(401).json({ message: 'Invalid Firebase token: ' + e.message });
+    }
+
+    const { uid, email, name, picture } = decoded;
+
+    // Find existing user by googleId or email
+    console.log('3. Searching for user in MongoDB by Google UID or Email...');
+    let user = await User.findOne({ $or: [{ googleId: uid }, { email }] });
+
+    if (!user) {
+      console.log('4. User not found. Creating new Google account...');
+      // Create new Google user (no password / studentId required)
+      user = new User({
+        name: name || email.split('@')[0],
+        email,
+        googleId: uid,
+        authProvider: 'google',
+        avatar: picture || '',
+        isVerified: true,     // Google already verified the email
+      });
+      await user.save();
+      console.log('5. New user created:', user._id);
+    } else if (!user.googleId) {
+      console.log('4. Local user found. Linking Google account...');
+      // Existing local user — link their Google account
+      user.googleId = uid;
+      user.authProvider = 'google';
+      if (picture && !user.avatar) user.avatar = picture;
+      user.isVerified = true;
+      await user.save();
+      console.log('5. Local user linked:', user._id);
+    } else {
+      console.log('4. Existing Google user found:', user._id);
+    }
+
+    console.log('6. Generating JWT...');
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET || 'K-Forum-secret',
+      { expiresIn: '7d' }
+    );
+
+    console.log('--- Google Sign-In Successful ---');
+    res.json({
+      message: 'Google sign-in successful',
+      token,
+      user: {
+        id: user._id,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        studentId: user.studentId,
+        year: user.year,
+        branch: user.branch,
+        avatar: user.avatar,
+        role: user.role,
+        authProvider: user.authProvider,
+      }
+    });
+  } catch (error) {
+    console.error('--- Firebase Auth Server Error ---');
+    console.error(error);
+    res.status(500).json({ message: 'Server error during Google sign-in: ' + error.message });
+  }
+});
+
 
 
 // Generate OTP

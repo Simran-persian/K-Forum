@@ -31,18 +31,33 @@ router.get('/suggestions', auth, async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const excludeIds = [user._id, ...user.connections, ...user.connectionRequests.map(r => r.user)];
+    // Only exclude the current user so the widget always has people to show
+    const excludeIds = [user._id];
 
-    // Find random users not in exclude list
+    // Find random users
     const suggestions = await User.aggregate([
       { $match: { _id: { $nin: excludeIds } } },
-      { $sample: { size: 5 } },
+      { $sample: { size: 8 } },
       { $project: { name: 1, avatar: 1, studentId: 1, branch: 1, year: 1 } }
     ]);
 
     res.json(suggestions);
   } catch (error) {
     console.error('Get suggestions error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Fallback: get all users (excluding current user) for BuddyConnect when suggestions returns empty
+router.get('/all-users', auth, async (req, res) => {
+  try {
+    const users = await User.find(
+      { _id: { $ne: req.userId } },
+      { name: 1, avatar: 1, studentId: 1, branch: 1, year: 1 }
+    ).limit(20);
+    res.json(users);
+  } catch (error) {
+    console.error('Get all users error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
