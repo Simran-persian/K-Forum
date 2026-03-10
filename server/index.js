@@ -14,15 +14,30 @@ dotenv.config();
 
 const app = express();
 const server = createServer(app);
+
+// Allowed origins configuration
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://k-forum-tau.vercel.app",
+  "https://www.kforum.online",
+  "https://kforum.online",
+  "https://kforum-gamma.vercel.app",
+  process.env.CLIENT_URL
+].filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"]
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 app.use(express.json());
 
 // MongoDB Connection
@@ -61,12 +76,17 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/wordle', wordleRoutes);
 
+
 // Health Check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'K-Forum API is running!' });
 });
 
-const PORT = 5001; // Force 5001 to avoid conflict with stuck process on 5000
-server.listen(PORT, () => {
+const PORT = process.env.PORT || 5001;
+
+// Start server - bind to 0.0.0.0 for Railway/cloud deployments
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
+export default app;

@@ -25,8 +25,10 @@ export const uploadImage = async (file) => {
   try {
     const result = await cloudinary.uploader.upload(file, {
       folder: 'k-forum',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
-      transformation: [{ width: 500, height: 500, crop: 'fill' }]
+      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+      transformation: [{ width: 1000, height: 500, crop: 'fit' }],
+      quality: 'auto',
+      fetch_format: 'auto'
     });
     return result.secure_url;
   } catch (error) {
