@@ -127,6 +127,65 @@ router.get('/', optionalAuth, async (req, res) => {
       query.$text = { $search: search };
     }
 
+    if (sortBy === 'random') {
+      const posts = await Post.aggregate([
+        { $match: query },
+        { $sample: { size: parseInt(limit) } },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'author',
+            foreignField: '_id',
+            as: 'author'
+          }
+        },
+        { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } }
+      ]);
+
+      const processedPosts = posts.map(post => {
+        // Calculate reaction counts
+        const reactionCounts = { like: 0, love: 0, haha: 0, wow: 0, sad: 0, angry: 0 };
+        (post.reactions || []).forEach(r => {
+          reactionCounts[r.type] = (reactionCounts[r.type] || 0) + 1;
+        });
+
+        // Find user's reaction if authenticated
+        let userReaction = null;
+        if (req.userId) {
+          const userReact = (post.reactions || []).find(
+            r => r.user.toString() === req.userId.toString()
+          );
+          userReaction = userReact?.type || null;
+        }
+
+        return {
+          ...post,
+          author: post.isAnonymous ? null : {
+            _id: post.author?._id,
+            name: post.author?.name,
+            studentId: post.author?.studentId,
+            year: post.author?.year,
+            branch: post.author?.branch,
+            avatar: post.author?.avatar
+          },
+          upvoteCount: post.upvotes?.length || 0,
+          downvoteCount: post.downvotes?.length || 0,
+          reactionCounts,
+          totalReactions: (post.reactions || []).length,
+          userReaction
+        };
+      });
+
+      const totalCount = await Post.countDocuments(query);
+
+      return res.json({
+        posts: processedPosts,
+        totalPages: Math.ceil(totalCount / limit),
+        currentPage: parseInt(page),
+        total: totalCount
+      });
+    }
+
     const posts = await Post.find(query)
       .populate('author', 'name studentId year branch avatar')
       .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
