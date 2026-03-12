@@ -226,7 +226,8 @@ router.get('/:id', async (req, res) => {
 
     res.json({
       ...user.toObject(),
-      postCount
+      postCount,
+      connectionCount: user.connections?.length || 0
     });
   } catch (error) {
     console.error('Get user error:', error);
