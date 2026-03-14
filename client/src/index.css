@@ -111,6 +111,16 @@ body {
   border-radius: 4px;
 }
 
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
 /* Wordle & Misc Animations */
 @keyframes shake {
 

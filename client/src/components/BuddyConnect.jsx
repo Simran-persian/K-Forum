@@ -117,9 +117,9 @@ const BuddyConnect = () => {
                             {requests.length}
                         </span>
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[300px] overflow-y-auto no-scrollbar">
                         {requests.map(user => (
-                            <div key={user._id} className="flex items-center justify-between min-h-[44px]">
+                            <div key={user._id} className="flex items-center justify-between min-h-[44px] hover:bg-white/5 p-2 rounded-2xl transition-colors">
                                 <div className="flex items-center gap-3">
                                     <img
                                         src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
@@ -159,9 +159,9 @@ const BuddyConnect = () => {
                     <Users className="w-5 h-5 text-emerald-400" />
                     Find Buddies
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[500px] overflow-y-auto no-scrollbar">
                     {suggestions.map(user => (
-                        <div key={user._id} className="flex items-center relative group min-h-[44px]">
+                        <div key={user._id} className="flex items-center relative group min-h-[44px] hover:bg-white/5 p-2 rounded-2xl transition-colors">
                             <div className="flex items-center gap-3 pr-12">
                                 <div className="relative shrink-0">
                                     <img
@@ -184,7 +184,7 @@ const BuddyConnect = () => {
                                 onClick={() => handleConnect(user._id)}
                                 disabled={sentRequests.includes(user._id)}
                                 className={`
-                                    absolute right-0 top-1/2 -translate-y-1/2
+                                    absolute right-2 top-1/2 -translate-y-1/2
                                     p-2 rounded-xl transition-all duration-300
                                     ${sentRequests.includes(user._id)
                                         ? 'bg-emerald-500/10 text-emerald-400 cursor-default'

@@ -5,7 +5,6 @@ import { auth } from '../middleware/auth.js';
 import emailService from '../services/emailService.js';
 import dotenv from 'dotenv';
 import admin from 'firebase-admin';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -17,19 +16,32 @@ const __dirname = path.dirname(__filename);
 // ── Firebase Admin init (done once, guarded so hot-reloads don't error) ──────
 if (!admin.apps.length) {
   try {
-    const serviceAccountPath = path.resolve(__dirname, '../serviceAccountKey.json');
     console.log('--- Firebase Admin Initialization ---');
-    console.log('Looking for service account at:', serviceAccountPath);
-
-    if (fs.existsSync(serviceAccountPath)) {
-      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    
+    // 1. Try individual environment variables (Best for Production)
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        })
+      });
+      console.log('✅ Firebase Admin initialized from individual Environment Variables');
+    } 
+    // 2. Fallback to Full JSON String in env
+    else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });
-      console.log('✅ Firebase Admin initialized successfully');
-    } else {
-      console.warn('⚠️  Firebase Admin: serviceAccountKey.json NOT FOUND at', serviceAccountPath);
+      console.log('✅ Firebase Admin initialized from FIREBASE_SERVICE_ACCOUNT env var');
+    } 
+    // No credentials found
+    else {
+      console.error('❌ Firebase Admin: No credentials found in environment variables (FIREBASE_PROJECT_ID, etc. or FIREBASE_SERVICE_ACCOUNT)!');
     }
+
   } catch (e) {
     console.error('❌ Firebase Admin Initialization ERROR:', e.message);
   }

@@ -121,18 +121,28 @@ const PostCard = ({ post, onDelete }) => {
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-[#17d059] to-emerald-600 rounded-full flex items-center justify-center overflow-hidden">
               {post.author?.avatar ? (
-                <img
-                  src={post.author.avatar}
-                  alt={post.author.name}
-                  className="w-full h-full object-cover"
-                />
+                post.author && !post.isAnonymous ? (
+                  <Link to={`/user/${post.author._id}`}>
+                    <img
+                      src={post.author.avatar}
+                      alt={post.author.name}
+                      className="w-full h-full object-cover hover:opacity-80 transition-opacity"
+                    />
+                  </Link>
+                ) : (
+                  <img
+                    src={post.author.avatar}
+                    alt={post.author.name}
+                    className="w-full h-full object-cover"
+                  />
+                )
               ) : (
                 <User className="w-5 h-5 text-white" />
               )}
             </div>
             <div>
               <p className="text-white font-medium">
-                {post.author ? (
+                {post.author && !post.isAnonymous ? (
                   <Link
                     to={`/user/${post.author._id}`}
                     className="hover:text-[#17d059] transition-colors"
