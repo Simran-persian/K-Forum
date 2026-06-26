@@ -31,12 +31,18 @@ router.get('/suggestions', auth, async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Only exclude the current user so the widget always has people to show
+    // Exclude current user, connected users, and pending requests
     const excludeIds = [user._id];
+    const connectedIds = user.connections.map(id => id.toString());
+    const pendingIds = user.connectionRequests
+      .filter(req => req.status === 'pending')
+      .map(req => req.user.toString());
+    
+    const excludeAll = [...excludeIds, ...connectedIds, ...pendingIds];
 
     // Find random users
     const suggestions = await User.aggregate([
-      { $match: { _id: { $nin: excludeIds } } },
+      { $match: { _id: { $nin: excludeAll.map(id => new (require('mongoose').Types.ObjectId)(id)) } } },
       { $sample: { size: 8 } },
       { $project: { name: 1, avatar: 1, studentId: 1, branch: 1, year: 1 } }
     ]);
@@ -62,11 +68,17 @@ router.get('/all-users', auth, async (req, res) => {
   }
 });
 
-// Get connections
+// Get connections with count
 router.get('/connections', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.userId).populate('connections', 'name avatar studentId branch year');
-    res.json(user.connections);
+    const user = await User.findById(req.userId)
+      .populate('connections', 'name avatar studentId branch year')
+      .select('connections');
+    
+    res.json({
+      connections: user.connections || [],
+      connectionCount: user.connections?.length || 0
+    });
   } catch (error) {
     console.error('Get connections error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -112,7 +124,7 @@ router.post('/connect/:userId', auth, async (req, res) => {
 
     // Check if already requested or connected
     const existingRequest = targetUser.connectionRequests.find(
-      r => r.user.toString() === req.userId
+      r => r.user.toString() === req.userId && r.status === 'pending'
     );
     const isConnected = targetUser.connections.includes(req.userId);
 
@@ -158,6 +170,7 @@ router.post('/connect/:userId/accept', auth, async (req, res) => {
     // Add to connections for both
     user.connections.push(userId);
     user.connectionRequests[requestIndex].status = 'accepted';
+    user.connectionRequests[requestIndex].respondedAt = new Date();
 
     const requester = await User.findById(userId);
     requester.connections.push(req.userId);
@@ -177,6 +190,11 @@ router.post('/connect/:userId/accept', auth, async (req, res) => {
       });
       await newConv.save();
     }
+
+    // Send acceptance email to requester
+    emailService.sendConnectionAcceptedEmail(
+      requester.email, requester.name, user.name
+    ).catch(err => console.error('Failed to send acceptance email:', err));
 
     res.json({ message: 'Connection accepted and chat initialized' });
   } catch (error) {
@@ -200,7 +218,15 @@ router.post('/connect/:userId/reject', auth, async (req, res) => {
     }
 
     user.connectionRequests[requestIndex].status = 'rejected';
+    user.connectionRequests[requestIndex].respondedAt = new Date();
     await user.save();
+
+    // Send rejection email to requester
+    const requester = await User.findById(userId);
+    const currentUser = await User.findById(req.userId).select('name');
+    emailService.sendConnectionRejectedEmail(
+      requester.email, requester.name, currentUser.name
+    ).catch(err => console.error('Failed to send rejection email:', err));
 
     res.json({ message: 'Connection rejected' });
   } catch (error) {
@@ -209,11 +235,12 @@ router.post('/connect/:userId/reject', auth, async (req, res) => {
   }
 });
 
-// Get user profile
+// Get user profile with connection details
 router.get('/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .select('-password -verificationOTP -otpExpires');
+      .select('-password -verificationOTP -otpExpires')
+      .populate('connections', 'name avatar studentId branch year');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -224,10 +251,14 @@ router.get('/:id', async (req, res) => {
       moderationStatus: 'approved'
     });
 
+    // Count accepted connections
+    const acceptedConnections = user.connectionRequests.filter(req => req.status === 'accepted').length;
+
     res.json({
       ...user.toObject(),
       postCount,
-      connectionCount: user.connections?.length || 0
+      connectionCount: user.connections?.length || 0,
+      acceptedConnectionRequests: acceptedConnections
     });
   } catch (error) {
     console.error('Get user error:', error);
