@@ -1,11 +1,33 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend only if API key exists, otherwise mock it
+let resend;
+try {
+  if (process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  } else {
+    console.warn('⚠️  RESEND_API_KEY not found. Email notifications will be logged only.');
+    resend = null;
+  }
+} catch (error) {
+  console.warn('⚠️  Resend initialization failed. Email notifications will be logged only.');
+  resend = null;
+}
 
 const emailService = {
   // Send buddy connection request email
   sendConnectionRequestEmail: async (recipientEmail, recipientName, senderName, senderEmail) => {
     try {
+      if (!resend) {
+        console.log('📧 [EMAIL LOG] Connection Request:', {
+          to: recipientEmail,
+          recipientName,
+          senderName,
+          subject: `${senderName} sent you a Buddy Connect request! 🤝`
+        });
+        return { id: 'mock-' + Date.now(), success: true };
+      }
+
       const response = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'noreply@kforum.online',
         to: recipientEmail,
@@ -41,10 +63,10 @@ const emailService = {
         `
       });
 
-      console.log('Connection request email sent:', response.id);
+      console.log('✅ Connection request email sent:', response.id);
       return response;
     } catch (error) {
-      console.error('Error sending connection request email:', error);
+      console.error('❌ Error sending connection request email:', error.message);
       throw error;
     }
   },
@@ -52,6 +74,16 @@ const emailService = {
   // Send connection accepted email
   sendConnectionAcceptedEmail: async (recipientEmail, recipientName, acceptorName) => {
     try {
+      if (!resend) {
+        console.log('📧 [EMAIL LOG] Connection Accepted:', {
+          to: recipientEmail,
+          recipientName,
+          acceptorName,
+          subject: `${acceptorName} accepted your Buddy Connect request! 🎊`
+        });
+        return { id: 'mock-' + Date.now(), success: true };
+      }
+
       const response = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'noreply@kforum.online',
         to: recipientEmail,
@@ -87,10 +119,10 @@ const emailService = {
         `
       });
 
-      console.log('Connection accepted email sent:', response.id);
+      console.log('✅ Connection accepted email sent:', response.id);
       return response;
     } catch (error) {
-      console.error('Error sending connection accepted email:', error);
+      console.error('❌ Error sending connection accepted email:', error.message);
       throw error;
     }
   },
@@ -98,6 +130,16 @@ const emailService = {
   // Send connection rejected email
   sendConnectionRejectedEmail: async (recipientEmail, recipientName, rejectorName) => {
     try {
+      if (!resend) {
+        console.log('📧 [EMAIL LOG] Connection Rejected:', {
+          to: recipientEmail,
+          recipientName,
+          rejectorName,
+          subject: 'Buddy Connect Request Response'
+        });
+        return { id: 'mock-' + Date.now(), success: true };
+      }
+
       const response = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'noreply@kforum.online',
         to: recipientEmail,
@@ -133,10 +175,10 @@ const emailService = {
         `
       });
 
-      console.log('Connection rejected email sent:', response.id);
+      console.log('✅ Connection rejected email sent:', response.id);
       return response;
     } catch (error) {
-      console.error('Error sending connection rejected email:', error);
+      console.error('❌ Error sending connection rejected email:', error.message);
       throw error;
     }
   }
