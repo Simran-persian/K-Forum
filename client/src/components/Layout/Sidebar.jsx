@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Search, Mail, Flame, User, Settings, Shield, PlusSquare, ChevronLeft, ChevronRight,Users } from 'lucide-react';
+import { Home, Search, Mail, Flame, User, Settings, Shield, PlusSquare, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -12,7 +12,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { icon: PlusSquare, label: 'Create', path: '/create-post' },
         { icon: Flame, label: 'Wordle', path: '/wordle', highlight: true },
         { icon: Users, label: 'Buddies', path: '/buddy-connect' },
-        // { icon: Mail, label: 'Inbox', path: '/inbox' },
+        { icon: Mail, label: 'Chat', path: '/messages' },
         { icon: User, label: 'Profile', path: '/profile' },
     ];
 
